@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "reel.fullname" . }}-scheduler-config
+  namespace: {{ include "reel.namespace" . }}
+  labels:
+    {{- include "reel.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduler
+data:
+  ENABLE_SCHEDULER: {{ .Values.scheduler.enabled | quote }}
+  MAX_CONCURRENT_CHECKPOINTS: {{ .Values.scheduler.maxConcurrentCheckpoints | quote }}
+  MAX_CONCURRENT_LAYERS: {{ .Values.scheduler.maxConcurrentLayers | quote }}
+  OPERATION_TIMEOUT_MINUTES: {{ .Values.scheduler.operationTimeoutMinutes | quote }}

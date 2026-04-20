@@ -1,0 +1,57 @@
+{{- if .Values.clamav.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "reel.fullname" . }}-clamd-config
+  namespace: {{ include "reel.namespace" . }}
+  labels:
+    {{- include "reel.labels" . | nindent 4 }}
+    app.kubernetes.io/component: forensics
+data:
+  clamd.conf: |
+    # ClamAV Daemon Configuration for Reel Agent
+    # Optimized for container forensics scanning
+
+    # Socket configuration
+    LocalSocket /var/run/clamav/clamd.sock
+    LocalSocketGroup root
+    LocalSocketMode 660
+
+    # Database location
+    DatabaseDirectory /var/lib/clamav
+
+    # Logging - use foreground mode output
+    LogSyslog no
+    LogTime yes
+    LogClean no
+    LogVerbose no
+    Foreground yes
+
+    # Resource limits
+    MaxThreads 2
+    MaxDirectoryRecursion 20
+    StreamMaxLength 100M
+
+    # Scanning behavior
+    ScanPE yes
+    ScanELF yes
+    ScanMail no
+    ScanArchive yes
+    DetectPUA no
+    AlgorithmicDetection yes
+
+    # CRITICAL: Follow symlinks - required for /proc/<pid>/root container scanning
+    FollowDirectorySymlinks yes
+    FollowFileSymlinks yes
+
+    # Performance
+    SelfCheck 600
+
+    # Exclude virtual filesystems when scanning container filesystems
+    ExcludePath ^/host/proc/[0-9]+/root/proc
+    ExcludePath ^/host/proc/[0-9]+/root/sys
+    ExcludePath ^/host/proc/[0-9]+/root/dev
+    ExcludePath ^/host/proc/[0-9]+/root/run
+    ExcludePath ^/sys
+    ExcludePath ^/dev
+{{- end }}

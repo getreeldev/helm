@@ -1,0 +1,157 @@
+# =============================================================================
+# Reel Helm Chart - values.yaml
+# Declarative Continuous Compliance for Kubernetes containers
+# Documentation: https://getreel.dev/docs
+# =============================================================================
+
+# Override name to keep resources named "reel-*" even though chart is "agent"
+nameOverride: "reel"
+
+# -----------------------------------------------------------------------------
+# CLUSTER IDENTIFICATION
+# -----------------------------------------------------------------------------
+# Used for S3 exports and multi-cluster deployments.
+
+config:
+  # Your cluster name - used in S3 paths and logs (e.g., "prod-us-east", "staging")
+  clusterName: ""
+
+  # Logging
+  logLevel: "info"      # debug, info, warn, error
+  logFormat: "console"  # json, console
+
+  # Advanced settings (usually don't need to change)
+  # enableCriu: "true"
+  # hostProc: "/host/proc"
+  # checkpointPath: "/var/dumps/checkpoints"
+
+# -----------------------------------------------------------------------------
+# LICENSE (Required for production)
+# -----------------------------------------------------------------------------
+# Reel includes a 30-minute trial. For production use, obtain a license at
+# https://getreel.dev and configure it below.
+
+license:
+  # Option 1: Provide token directly (Helm creates a Secret automatically)
+  token: ""
+
+  # Option 2: Reference a pre-existing Kubernetes secret
+  # Create secret: kubectl create secret generic reel-license -n reel --from-literal=token=<your-token>
+  # Then set secretRef.name below
+  secretRef:
+    name: ""       # e.g., "reel-license"
+    key: "token"
+
+# -----------------------------------------------------------------------------
+# FEATURES
+# -----------------------------------------------------------------------------
+# Enable or disable optional components.
+
+# CRIU checkpoint support (installs CRIU binary to host)
+initCriu:
+  enabled: true
+  image:
+    repository: getreel/init-criu
+    tag: "v1.0.1"
+    pullPolicy: IfNotPresent
+
+# Trivy vulnerability scanning
+initTrivy:
+  enabled: true
+  image:
+    repository: getreel/init-trivy
+    tag: "v1.0.1"
+    pullPolicy: IfNotPresent
+
+# ClamAV malware scanning (runs as sidecar)
+# Signature database loads ~1GB into memory on startup
+clamav:
+  enabled: true
+  image:
+    repository: clamav/clamav
+    tag: "1.5"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 500m
+      memory: 2Gi
+
+# Annotation-driven scheduler for automated captures
+# Configure schedules via reel.io/schedule annotation on pods/namespaces
+scheduler:
+  enabled: "true"
+  maxConcurrentCheckpoints: "3"
+  maxConcurrentLayers: "2"
+  operationTimeoutMinutes: "5"
+
+# -----------------------------------------------------------------------------
+# IMAGES
+# -----------------------------------------------------------------------------
+
+image:
+  repository: getreel/agent
+  tag: "v1.0.1"
+  pullPolicy: IfNotPresent
+
+# -----------------------------------------------------------------------------
+# REGISTRY AUTHENTICATION (Optional)
+# -----------------------------------------------------------------------------
+# Only needed for private registries or local mirroring. Public images from
+# docker.io/getreel/* do not require authentication.
+#
+
+# Option A: Let Helm create the secret (create: true)
+#   Set create: true and provide credentials below.
+#
+# imageCredentials:
+#   create: true
+#   secretName: "regcred"
+#   registry: "https://index.docker.io/v1/"
+#   username: ""
+#   password: ""
+
+# Option B: Use a pre-existing secret (create: false)
+#   kubectl create secret docker-registry regcred \
+#     --docker-server=https://index.docker.io/v1/ \
+#     --docker-username=<username> \
+#     --docker-password=<token> \
+#     -n reel
+#   Then set create: false and secretName: "regcred" below.
+
+
+# -----------------------------------------------------------------------------
+# KUBERNETES SETTINGS
+# -----------------------------------------------------------------------------
+
+serviceAccount:
+  create: true
+  name: reel
+
+rbac:
+  create: true
+
+# Agent pod resources (measured with 3 concurrent 5GB layer captures)
+resources:
+  requests:
+    cpu: 250m
+    memory: 128Mi
+  limits:
+    cpu: 1000m
+    memory: 256Mi
+
+tolerations: []
+
+nodeSelector: {}
+
+affinity: {}
+
+# -----------------------------------------------------------------------------
+# TELEMETRY
+# -----------------------------------------------------------------------------
+# Startup telemetry sends node name, customer ID, and cluster info to help
+# improve Reel. Set disabled to true to opt out.
+
+telemetry:
+  disabled: false

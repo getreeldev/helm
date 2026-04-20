@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "reel.fullname" . }}-config
+  namespace: {{ include "reel.namespace" . }}
+  labels:
+    {{- include "reel.labels" . | nindent 4 }}
+    app.kubernetes.io/component: forensics
+data:
+  ENABLE_CRIU: {{ .Values.config.enableCriu | default "true" | quote }}
+  HOST_PROC: {{ .Values.config.hostProc | default "/host/proc" | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | default "info" | quote }}
+  LOG_FORMAT: {{ .Values.config.logFormat | default "text" | quote }}
+  CHECKPOINT_PATH: {{ .Values.config.checkpointPath | default "/var/dumps/checkpoints" | quote }}

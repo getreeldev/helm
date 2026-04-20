@@ -1,0 +1,289 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "reel.fullname" . }}-agent
+  namespace: {{ include "reel.namespace" . }}
+  labels:
+    {{- include "reel.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  selector:
+    matchLabels:
+      {{- include "reel.agentSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "reel.agentSelectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "reel.serviceAccountName" . }}
+      hostPID: true
+      hostNetwork: false
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.imageCredentials .Values.imageCredentials.secretName }}
+      imagePullSecrets:
+        - name: {{ .Values.imageCredentials.secretName }}
+      {{- end }}
+      initContainers:
+      {{- if .Values.initCriu.enabled }}
+      # Install MPTCP-enabled CRIU to host filesystem
+      - name: init-criu
+        image: "{{ .Values.initCriu.image.repository }}:{{ .Values.initCriu.image.tag }}"
+        imagePullPolicy: {{ .Values.initCriu.image.pullPolicy | default "IfNotPresent" }}
+        securityContext:
+          privileged: true
+        command:
+          - /install.sh
+          - /host
+        volumeMounts:
+          - name: host-root
+            mountPath: /host
+      {{- end }}
+      {{- if .Values.initTrivy.enabled }}
+      # Trivy database initialization
+      - name: init-trivy
+        image: "{{ .Values.initTrivy.image.repository }}:{{ .Values.initTrivy.image.tag }}"
+        imagePullPolicy: {{ .Values.initTrivy.image.pullPolicy | default "IfNotPresent" }}
+        command: ["/init-trivy.sh"]
+        volumeMounts:
+        - name: trivy-cache
+          mountPath: /root/.cache/trivy
+        - name: security-bins
+          mountPath: /opt/security-tools/bin
+        securityContext:
+          runAsUser: 0
+          capabilities:
+            drop:
+            - ALL
+      {{- end }}
+      containers:
+      - name: agent
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["/app/reel"]
+        args: ["server"]
+        env:
+        - name: CLUSTER_NAME
+          value: {{ .Values.config.clusterName | quote }}
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PATH
+          value: "/app:/opt/security-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        - name: LD_LIBRARY_PATH
+          value: "/opt/security-tools/bin"
+        - name: LOG_FORMAT
+          value: {{ .Values.config.logFormat | quote }}
+        - name: REEL_AGENT
+          value: "1"
+        {{- if .Values.license.token }}
+        - name: REEL_LICENSE
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "reel.fullname" . }}-license
+              key: token
+        {{- else if .Values.license.secretRef.name }}
+        - name: REEL_LICENSE
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.license.secretRef.name }}
+              key: {{ .Values.license.secretRef.key | default "token" }}
+        {{- end }}
+        {{- if .Values.telemetry.disabled }}
+        - name: REEL_TELEMETRY_DISABLED
+          value: "true"
+        {{- end }}
+        - name: CLAMAV_ENABLED
+          value: {{ .Values.clamav.enabled | quote }}
+        - name: CRIU_ENABLED
+          value: {{ .Values.initCriu.enabled | quote }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "reel.fullname" . }}-config
+        - configMapRef:
+            name: {{ include "reel.fullname" . }}-scheduler-config
+        {{- with .Values.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - SYS_PTRACE
+            - SYS_ADMIN
+          runAsUser: 0
+        volumeMounts:
+        - name: security-bins
+          mountPath: /opt/security-tools/bin
+          readOnly: true
+        {{- if .Values.clamav.enabled }}
+        - name: clamav-socket
+          mountPath: /var/run/clamav
+        {{- end }}
+        - name: host-proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: host-sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: host-dev
+          mountPath: /host/dev
+          readOnly: true
+        - name: dumps
+          mountPath: /var/dumps
+        - name: var-lib-containers
+          mountPath: /var/lib/containers
+          readOnly: false
+        - name: var-lib-kubelet
+          mountPath: /var/lib/kubelet
+          readOnly: false
+        - name: run-containerd
+          mountPath: /run/containerd
+          readOnly: true
+        - name: run-crio
+          mountPath: /run/crio
+          readOnly: true
+        - name: var-lib-containerd
+          mountPath: /var/lib/containerd
+          readOnly: false
+        - name: trivy-cache
+          mountPath: /root/.cache/trivy
+      {{- if .Values.clamav.enabled }}
+      # ClamAV daemon sidecar
+      - name: clamd
+        image: "{{ .Values.clamav.image.repository }}:{{ .Values.clamav.image.tag }}"
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          echo "Updating ClamAV virus definitions..."
+          freshclam --stdout || echo "Warning: freshclam update failed, continuing with existing DB"
+          echo "Starting clamd with reel configuration..."
+          exec clamd --config-file=/etc/clamav/reel-clamd.conf 2>&1 | grep -v "File path check failure"
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+        {{- with .Values.clamav.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        startupProbe:
+          exec:
+            command:
+            - clamdscan
+            - --ping
+            - "3"
+            - --config-file=/etc/clamav/reel-clamd.conf
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 15
+          timeoutSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - clamdscan
+            - --ping
+            - "3"
+            - --config-file=/etc/clamav/reel-clamd.conf
+          initialDelaySeconds: 0
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          exec:
+            command:
+            - clamdscan
+            - --ping
+            - "3"
+            - --config-file=/etc/clamav/reel-clamd.conf
+          initialDelaySeconds: 0
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 3
+        volumeMounts:
+        - name: clamav-socket
+          mountPath: /var/run/clamav
+        - name: host-proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: clamd-config
+          mountPath: /etc/clamav/reel-clamd.conf
+          subPath: clamd.conf
+          readOnly: true
+      {{- end }}
+      volumes:
+      - name: host-root
+        hostPath:
+          path: /
+          type: Directory
+      {{- if .Values.clamav.enabled }}
+      - name: clamd-config
+        configMap:
+          name: {{ include "reel.fullname" . }}-clamd-config
+      - name: clamav-socket
+        emptyDir: {}
+      {{- end }}
+      - name: security-bins
+        emptyDir: {}
+      - name: host-proc
+        hostPath:
+          path: /proc
+          type: Directory
+      - name: host-sys
+        hostPath:
+          path: /sys
+          type: Directory
+      - name: host-dev
+        hostPath:
+          path: /dev
+          type: Directory
+      - name: dumps
+        hostPath:
+          path: /var/lib/reel/dumps
+          type: DirectoryOrCreate
+      - name: var-lib-containers
+        hostPath:
+          path: /var/lib/containers
+          type: DirectoryOrCreate
+      - name: var-lib-kubelet
+        hostPath:
+          path: /var/lib/kubelet
+          type: DirectoryOrCreate
+      - name: run-containerd
+        hostPath:
+          path: /run/containerd
+          type: DirectoryOrCreate
+      - name: run-crio
+        hostPath:
+          path: /run/crio
+          type: DirectoryOrCreate
+      - name: var-lib-containerd
+        hostPath:
+          path: /var/lib/containerd
+          type: DirectoryOrCreate
+      - name: trivy-cache
+        hostPath:
+          path: /var/lib/reel/trivy-cache
+          type: DirectoryOrCreate

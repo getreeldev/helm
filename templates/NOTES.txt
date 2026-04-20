@@ -1,0 +1,35 @@
+Reel has been deployed successfully!
+
+ACCESSING THE AGENT:
+
+  Since no Service is exposed, access the agent via kubectl exec:
+
+  # Find agent pod on current node
+  kubectl get pods -n {{ include "reel.namespace" . }} -l app.kubernetes.io/component=agent
+
+  # Execute reel commands
+  kubectl exec -n {{ include "reel.namespace" . }} <pod-name> -- reel get workloads
+  kubectl exec -n {{ include "reel.namespace" . }} <pod-name> -- reel list checkpoints
+
+SCHEDULER:
+
+  The scheduler is {{ if eq (.Values.scheduler.enabled | toString) "true" }}ENABLED{{ else }}DISABLED{{ end }}.
+  {{- if ne (.Values.scheduler.enabled | toString) "true" }}
+
+  To enable the scheduler, upgrade with:
+    helm upgrade {{ .Release.Name }} . --set scheduler.enabled=true
+
+  Configure schedules via pod/namespace annotations:
+    reel.io/schedule: |
+      0 2 * * * | create checkpoint
+      next | export checkpoint --to-s3 my-bucket
+  {{- end }}
+
+VERIFY DEPLOYMENT:
+
+  kubectl rollout status daemonset/{{ include "reel.fullname" . }}-agent -n {{ include "reel.namespace" . }}
+  kubectl logs -n {{ include "reel.namespace" . }} -l app.kubernetes.io/component=agent --tail=50
+
+DOCUMENTATION:
+
+  https://github.com/getreeldev/reel
