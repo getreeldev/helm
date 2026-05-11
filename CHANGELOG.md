@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Reel Helm chart are documented here. CLI changes live in [`getreeldev/releases`](https://github.com/getreeldev/releases/blob/main/CHANGELOG.md); GitHub Action changes live in [`getreeldev/reel-action`](https://github.com/getreeldev/reel-action/blob/main/CHANGELOG.md).
+All notable changes to the Reel Helm chart are documented here. CLI changes live in [`getreeldev/reel-cli`](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md); GitHub Action changes live in [`getreeldev/reel-action`](https://github.com/getreeldev/reel-action/blob/main/CHANGELOG.md).
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
