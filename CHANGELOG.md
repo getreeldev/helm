@@ -4,6 +4,10 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.5.3
+
+- **Image-tag pins bumped to v1.5.3** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for what's in the corresponding agent release — in short, a release-pipeline fix so that `reel version` from inside the agent pod reports the chart's `appVersion` (e.g. `v1.5.3`) instead of the underlying RC suffix. No chart-side template changes.
+
 ## v1.5.2
 
 - **Image-tag pins bumped to v1.5.2** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for what's in the corresponding agent release. No chart-side template changes — purely an agent version bump.
