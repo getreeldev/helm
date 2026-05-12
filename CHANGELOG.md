@@ -4,6 +4,10 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.6.0
+
+- **Image-tag pins bumped to v1.6.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that adds (a) **VEX annotation in the scheduler** — `reel.io/schedule: "*/5 * * * * | upload sbom --scanners vuln,vex --s3-bucket evidence"` now ships vex-hub-annotated CycloneDX SBOMs to S3; (b) actionable runtime-detection errors and a `--socket` flag for non-default runtime socket paths; and (c) the **scheduler verb split** — `export` is local-only, `upload` is for S3. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for migration details if any of your pods have `reel.io/schedule` annotations using `export X --s3-bucket Y`. No chart-side template changes.
+
 ## v1.5.3
 
 - **Image-tag pins bumped to v1.5.3** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for what's in the corresponding agent release — in short, a release-pipeline fix so that `reel version` from inside the agent pod reports the chart's `appVersion` (e.g. `v1.5.3`) instead of the underlying RC suffix. No chart-side template changes.
