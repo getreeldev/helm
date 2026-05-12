@@ -60,13 +60,24 @@ spec:
         volumeMounts:
         - name: trivy-cache
           mountPath: /root/.cache/trivy
-        - name: security-bins
-          mountPath: /opt/security-tools/bin
+        - name: trivy-bin
+          mountPath: /opt/trivy/bin
         securityContext:
           runAsUser: 0
           capabilities:
             drop:
             - ALL
+      {{- end }}
+      {{- if .Values.clamav.enabled }}
+      # Prepare ClamAV database directory with correct permissions
+      - name: init-clamav
+        image: busybox:1.36
+        command: ["sh", "-c", "chmod 777 /var/lib/clamav"]
+        volumeMounts:
+        - name: clamav-db
+          mountPath: /var/lib/clamav
+        securityContext:
+          runAsUser: 0
       {{- end }}
       containers:
       - name: agent
@@ -90,9 +101,9 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: PATH
-          value: "/app:/opt/security-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          value: "/app:/opt/trivy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         - name: LD_LIBRARY_PATH
-          value: "/opt/security-tools/bin"
+          value: "/opt/trivy/bin"
         - name: LOG_FORMAT
           value: {{ .Values.config.logFormat | quote }}
         - name: REEL_AGENT
@@ -135,8 +146,8 @@ spec:
             - SYS_ADMIN
           runAsUser: 0
         volumeMounts:
-        - name: security-bins
-          mountPath: /opt/security-tools/bin
+        - name: trivy-bin
+          mountPath: /opt/trivy/bin
           readOnly: true
         {{- if .Values.clamav.enabled }}
         - name: clamav-socket
@@ -225,6 +236,8 @@ spec:
         volumeMounts:
         - name: clamav-socket
           mountPath: /var/run/clamav
+        - name: clamav-db
+          mountPath: /var/lib/clamav
         - name: host-proc
           mountPath: /host/proc
           readOnly: true
@@ -244,8 +257,12 @@ spec:
           name: {{ include "reel.fullname" . }}-clamd-config
       - name: clamav-socket
         emptyDir: {}
+      - name: clamav-db
+        hostPath:
+          path: /var/tmp/reel/clamav
+          type: DirectoryOrCreate
       {{- end }}
-      - name: security-bins
+      - name: trivy-bin
         emptyDir: {}
       - name: host-proc
         hostPath:

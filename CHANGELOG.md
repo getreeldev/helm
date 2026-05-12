@@ -4,6 +4,12 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.5.1
+
+- **Trivy binary now actually reaches the agent.** The agent expects `/opt/trivy/bin/trivy` (binary convention since Feb 2026) but the chart was mounting the shared volume at `/opt/security-tools/bin`. init-trivy was writing the binary to a path inside its own filesystem layer, the shared volume stayed empty, and the agent fell through to its toolcache fallback (downloads Trivy on every cold start). Renamed the `security-bins` volume to `trivy-bin`, mounted at `/opt/trivy/bin` in both init-trivy and agent containers, and updated the agent's `PATH` / `LD_LIBRARY_PATH` to match. Init-trivy is no longer dead weight.
+- **ClamAV virus DB persists across pod restarts.** Added a `clamav-db` hostPath volume at `/var/tmp/reel/clamav` mounted at `/var/lib/clamav` in the clamd sidecar, plus an `init-clamav` busybox init container that `chmod 777`s the directory so clamd's runtime user can write to it. Aligns with the agent binary's `/var/tmp/reel/clamav` convention. Without this, freshclam re-downloaded the full ClamAV DB (~110 MB) on every pod restart.
+- **Image-tag pins bumped to v1.5.1** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up the corresponding CLI / agent release that routes binary-blob exporters (layer / memory / checkpoint / frame) through the shared S3-credential helper — fixes IMDS timeouts on non-EC2 clusters that configure `aws-credentials` via secret.
+
 ## v1.5.0
 
 - **Image-tag pins bumped to v1.5.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up the CLI / agent VEX-support release (new `--scanners vex` flag on `reel export sbom`). No chart-side template changes — the agent simply gains the new CLI subcommand.
