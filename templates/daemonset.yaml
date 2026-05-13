@@ -38,7 +38,10 @@ spec:
       {{- end }}
       initContainers:
       {{- if .Values.initCriu.enabled }}
-      # Install MPTCP-enabled CRIU to host filesystem
+      # Install MPTCP-enabled CRIU to the host's runc-resolvable PATH and
+      # write a status marker to the reel-init-state emptyDir that the agent
+      # reads. If install fails but the host already has a CRIU on PATH,
+      # the marker reports source=host so reel status remains accurate.
       - name: init-criu
         image: "{{ .Values.initCriu.image.repository }}:{{ .Values.initCriu.image.tag }}"
         imagePullPolicy: {{ .Values.initCriu.image.pullPolicy | default "IfNotPresent" }}
@@ -50,6 +53,8 @@ spec:
         volumeMounts:
           - name: host-root
             mountPath: /host
+          - name: reel-init-state
+            mountPath: /reel-init
       {{- end }}
       {{- if .Values.initTrivy.enabled }}
       # Trivy database initialization
@@ -127,8 +132,6 @@ spec:
         {{- end }}
         - name: CLAMAV_ENABLED
           value: {{ .Values.clamav.enabled | quote }}
-        - name: CRIU_ENABLED
-          value: {{ .Values.initCriu.enabled | quote }}
         envFrom:
         - configMapRef:
             name: {{ include "reel.fullname" . }}-config
@@ -181,6 +184,11 @@ spec:
           readOnly: false
         - name: trivy-cache
           mountPath: /root/.cache/trivy
+        {{- if .Values.initCriu.enabled }}
+        - name: reel-init-state
+          mountPath: /reel-init
+          readOnly: true
+        {{- end }}
       {{- if .Values.clamav.enabled }}
       # ClamAV daemon sidecar
       - name: clamd
@@ -304,3 +312,10 @@ spec:
         hostPath:
           path: /var/lib/reel/trivy-cache
           type: DirectoryOrCreate
+      {{- if .Values.initCriu.enabled }}
+      # Pod-shared marker file written by init-criu and read by the agent.
+      # Tells the agent what CRIU (if any) is reachable via the host's PATH,
+      # without requiring any host mount in the agent container itself.
+      - name: reel-init-state
+        emptyDir: {}
+      {{- end }}
