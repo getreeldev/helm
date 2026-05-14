@@ -4,6 +4,10 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.7.1
+
+- **Image-tag pins bumped to v1.7.1** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that adds a stdout pipe-keepalive shim — `reel export sbom|sarif|cbom ...` now survives downstream stdin-readiness timeouts on piped consumers (e.g. `| claude "..."`). See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for details. No chart-side template changes.
+
 ## v1.7.0
 
 - **Image-tag pins bumped to v1.7.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. The agent and init-criu images carry the v1.7.0 CRIU detection overhaul — see the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for full details.
