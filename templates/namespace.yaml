@@ -1,16 +1,23 @@
 {{- /*
 Auto-create the install namespace so `helm install reel oci://docker.io/getreel/helm -n reel`
-works on a fresh cluster without requiring `--create-namespace`. resource-policy: keep
-prevents `helm uninstall` from deleting the namespace (which would take all forensic
-artifacts with it).
+works on a fresh cluster without requiring `--create-namespace`. Helm fully owns the
+namespace lifecycle: created on install, deleted on uninstall. Reel itself is stateless
+(config from K8s annotations, evidence in S3 or hostPath dirs outside the namespace) so
+deleting the namespace on uninstall loses nothing user-meaningful.
 
-Disable with `--set namespace.create=false` if a cluster admin pre-creates the namespace.
+The `lookup` guard makes this idempotent against pre-existing namespaces: if the user
+ran `kubectl create ns reel` before installing, the chart skips its Namespace template
+(so helm doesn't error trying to claim a resource it didn't create). Trade-off: helm
+won't manage that pre-existing namespace's lifecycle — `helm uninstall` won't delete it.
+
+Disable with `--set namespace.create=false` if you want to manage the namespace fully
+outside helm (e.g., a cluster admin pre-creates it with policies / labels).
 */ -}}
 {{- if .Values.namespace.create -}}
+{{- if not (lookup "v1" "Namespace" "" .Release.Namespace) -}}
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/resource-policy": keep
+{{- end -}}
 {{- end -}}
