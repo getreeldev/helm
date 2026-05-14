@@ -4,6 +4,24 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.7.0
+
+- **Image-tag pins bumped to v1.7.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. The agent and init-criu images carry the v1.7.0 CRIU detection overhaul — see the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for full details.
+
+### Chart-side changes
+
+- **Auto-create install namespace** (`templates/namespace.yaml`). New template gated on `namespace.create` (default `true`). `helm install reel oci://docker.io/getreel/helm -n reel` on a fresh cluster no longer requires `--create-namespace`. The Namespace resource carries `helm.sh/resource-policy: keep` so `helm uninstall` does not delete the namespace and take all forensic artifacts with it. Set `--set namespace.create=false` if a cluster admin pre-creates the namespace with its own policies / labels.
+
+- **Pod-shared `reel-init-state` emptyDir** (`templates/daemonset.yaml`). New emptyDir volume mounted rw in the init-criu container at `/reel-init` and ro in the agent container at the same path. init-criu writes a status marker (`source=reel|host|none`) that the agent reads to determine CRIU availability — no host filesystem access required from the agent container. Gated on `initCriu.enabled`: when disabled, no volume, no mount, no image pull.
+
+- **`CRIU_ENABLED` env var removed from the agent's pod spec** (`templates/daemonset.yaml`). The agent no longer trusts this env var as a stand-in for CRIU presence; the marker file is the authoritative signal. Existing installs upgrading from v1.6.x will see the env var disappear from the agent container's environment.
+
+### Migration
+
+- Existing `helm upgrade --version 1.7.0` users will see a brief rolling restart of agent pods to pick up the new manifest. No values changes required for default behavior.
+- Users who customized via `initCriu.enabled=false` will see `Checkpoint: ✓ (init-criu disabled in chart; CRIU presence not verified, checkpoint is best-effort)` in `reel status` instead of the previous `✗ Checkpoint`. Checkpoint commands now attempt and surface real runtime errors if no CRIU is on the host's PATH.
+- Cleaning up reel's CRIU from a node: see the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for the `/uninstall.sh` invocation.
+
 ## v1.6.0
 
 - **Image-tag pins bumped to v1.6.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that adds (a) **VEX annotation in the scheduler** — `reel.io/schedule: "*/5 * * * * | upload sbom --scanners vuln,vex --s3-bucket evidence"` now ships vex-hub-annotated CycloneDX SBOMs to S3; (b) actionable runtime-detection errors and a `--socket` flag for non-default runtime socket paths; and (c) the **scheduler verb split** — `export` is local-only, `upload` is for S3. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for migration details if any of your pods have `reel.io/schedule` annotations using `export X --s3-bucket Y`.
