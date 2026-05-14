@@ -10,8 +10,6 @@ The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ 
 
 ### Chart-side changes
 
-- **Auto-create install namespace** (`templates/namespace.yaml`). New template gated on `namespace.create` (default `true`). `helm install reel oci://docker.io/getreel/helm -n reel` on a fresh cluster no longer requires `--create-namespace`. Helm fully owns the namespace lifecycle when it creates it: deleted on uninstall. Reel itself is stateless (config from K8s annotations, evidence in S3 or hostPath dirs outside the namespace) so deleting the namespace on uninstall loses nothing user-meaningful. A `lookup` guard skips the template when the namespace already exists, so pre-creating the namespace by mistake doesn't break the install — helm just won't own that pre-existing namespace's lifecycle. Set `--set namespace.create=false` to disable the template entirely (e.g., when a cluster admin manages the namespace).
-
 - **Pod-shared `reel-init-state` emptyDir** (`templates/daemonset.yaml`). New emptyDir volume mounted rw in the init-criu container at `/reel-init` and ro in the agent container at the same path. init-criu writes a status marker (`source=reel|host|none`) that the agent reads to determine CRIU availability — no host filesystem access required from the agent container. Gated on `initCriu.enabled`: when disabled, no volume, no mount, no image pull.
 
 - **`CRIU_ENABLED` env var removed from the agent's pod spec** (`templates/daemonset.yaml`). The agent no longer trusts this env var as a stand-in for CRIU presence; the marker file is the authoritative signal. Existing installs upgrading from v1.6.x will see the env var disappear from the agent container's environment.

@@ -8,16 +8,6 @@
 nameOverride: "reel"
 
 # -----------------------------------------------------------------------------
-# NAMESPACE
-# -----------------------------------------------------------------------------
-# Auto-create the install namespace so `helm install ... -n reel` works on a
-# fresh cluster without needing `--create-namespace`. Set to false if a cluster
-# admin pre-creates the namespace with its own policies / labels.
-
-namespace:
-  create: true
-
-# -----------------------------------------------------------------------------
 # CLUSTER IDENTIFICATION
 # -----------------------------------------------------------------------------
 # Used for S3 exports and multi-cluster deployments.
