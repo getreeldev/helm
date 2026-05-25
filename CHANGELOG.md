@@ -4,6 +4,10 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.7.2
+
+- **Image-tag pins bumped to v1.7.2** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that **closes a tar symlink-escape vulnerability** in the image-extract path (reachable via scheduled `upload malware` / `upload cbom` against untrusted images — agent runs as root in pod, so host-file overwrite was in scope). Also extends the v1.7.1 pipe-keepalive shim to the remaining JSON/YAML exports (`inventory`, `malware`, `metadata`, `volatile`) and consolidates internal tar extraction to a single hardened implementation. **Upgrade is recommended for any cluster with scheduled malware/CBOM scans of third-party images.** See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for details. No chart-side template changes.
+
 ## v1.7.1
 
 - **Image-tag pins bumped to v1.7.1** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that adds a stdout pipe-keepalive shim — `reel export sbom|sarif|cbom ...` now survives downstream stdin-readiness timeouts on piped consumers (e.g. `| claude "..."`). See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for details. No chart-side template changes.
