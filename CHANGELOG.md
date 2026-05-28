@@ -4,6 +4,12 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.9.0
+
+- **Image-tag pins bumped to v1.9.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI release that adds a standalone MCP server (`reel start mcp`) — used outside the cluster, on developer laptops. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for what's new on the CLI side.
+- **`templates/daemonset.yaml`: agent launch args `["server"]` → `["start", "server"]`.** The CLI renamed the long-running command from `reel server` to `reel start server` (no back-compat shim), so the agent container must invoke the new command or it crashloops on an unknown-command error. Required chart-side change paired with this release.
+- The in-pod MCP listener planned for v1.10.0 will land further chart edits (port exposure, optional disable flag).
+
 ## v1.8.0
 
 - **Image-tag pins bumped to v1.8.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release where the agent's HTTP API gains 12 new `POST /api/v1/{artifact}/upload` endpoints — the agent server now owns S3 talk for every artifact type. Remote callers (CLI in `--agent` mode, the in-pod scheduler, and the upcoming MCP gateway) POST to the agent and the agent handles credentials + S3. **Breaking for scheduler annotations using the `export` verb** — those now error; rewrite as `upload` with an S3 destination. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for migration details. No chart-side template changes.

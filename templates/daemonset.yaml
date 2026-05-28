@@ -89,7 +89,7 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command: ["/app/reel"]
-        args: ["server"]
+        args: ["start", "server"]
         env:
         - name: CLUSTER_NAME
           value: {{ .Values.config.clusterName | quote }}
