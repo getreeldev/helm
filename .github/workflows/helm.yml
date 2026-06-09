@@ -22,6 +22,23 @@ jobs:
       - name: Helm template
         run: helm template reel . --debug
 
+      - name: Security invariants
+        run: |
+          set -euo pipefail
+          # Secrets RBAC must stay get-only (no list/watch) — the agent fetches
+          # a named backup-credentials secret, it must never enumerate secrets.
+          sec=$(helm template reel . | awk '/resources: \["secrets"\]/{getline; print}')
+          echo "secrets verbs: $sec"
+          echo "$sec" | grep -q 'verbs: \["get"\]' \
+            || { echo "FAIL: secrets RBAC is not get-only"; exit 1; }
+          if echo "$sec" | grep -qE 'list|watch'; then
+            echo "FAIL: secrets RBAC granted list/watch (lets a compromised agent dump all secrets)"; exit 1
+          fi
+          # The NetworkPolicy (when enabled) must deny all ingress.
+          helm template reel . --set networkPolicy.enabled=true | grep -q 'ingress: \[\]' \
+            || { echo "FAIL: NetworkPolicy does not deny ingress"; exit 1; }
+          echo "security invariants OK"
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: lint

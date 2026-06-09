@@ -23,8 +23,15 @@ rules:
   resources: ["nodes/checkpoint"]
   verbs: ["create"]
 - apiGroups: [""]
-  resources: ["configmaps", "secrets"]
+  resources: ["configmaps"]
   verbs: ["get", "list", "watch"]
+# Secrets: get-by-name only. The agent fetches a user-referenced backup
+# credentials secret by name (or falls back to IRSA) — it never lists or
+# watches secrets, so it cannot enumerate/dump cluster secrets even if
+# compromised. Self-service backup config (any namespace) still works.
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
 - apiGroups: [""]
   resources: ["namespaces"]
   verbs: ["get", "list", "watch"]

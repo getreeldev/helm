@@ -1,0 +1,47 @@
+{{- if .Values.networkPolicy.enabled }}
+# Default-deny ingress to the agent + port-scoped egress.
+#
+# Ingress: the agent's forensic data path is entirely node-local (/host/proc,
+# hostPID, the CRI socket) — it never needs anything to connect TO it over the
+# pod/cluster network. The HTTP API binds 127.0.0.1 by default; this policy
+# is defense-in-depth so even an operator who opts into a network bind isn't
+# reachable from arbitrary pods.
+#
+# Egress: scoped by port to DNS + HTTPS so the agent can reach the Kubernetes
+# API server, the S3 evidence vault, vex-hub, and telemetry — but not exfil on
+# arbitrary ports. Tighten the `to:` selectors per environment if desired.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "reel.fullname" . }}-agent
+  labels:
+    {{- include "reel.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "reel.agentSelectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  # No ingress rules → all inbound denied.
+  ingress: []
+  egress:
+    # DNS resolution.
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # HTTPS: Kubernetes API server, S3, vex-hub, telemetry.
+    - ports:
+        - protocol: TCP
+          port: 443
+    # Kubernetes API server on the common alternate port.
+    - ports:
+        - protocol: TCP
+          port: 6443
+{{- with .Values.networkPolicy.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- end }}

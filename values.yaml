@@ -132,6 +132,23 @@ serviceAccount:
 rbac:
   create: true
 
+# -----------------------------------------------------------------------------
+# NETWORK POLICY
+# -----------------------------------------------------------------------------
+# Default-deny ingress to the agent + port-scoped egress (DNS + HTTPS for the
+# K8s API server, S3, vex-hub, telemetry). The agent reads containers
+# node-locally (/host/proc, hostPID, CRI socket) so denying ingress breaks
+# nothing. Opt-in (off by default) since it only takes effect on CNIs that
+# enforce NetworkPolicy and your egress may need extra ports (proxies, VPC
+# endpoints) — add them via extraEgress. The HTTP API already binds localhost
+# by default, so this is defense-in-depth.
+networkPolicy:
+  enabled: false
+  # Extra egress rules appended to the defaults, e.g. an HTTP proxy on :3128:
+  #   extraEgress:
+  #     - ports: [{ protocol: TCP, port: 3128 }]
+  extraEgress: []
+
 # Agent pod resources (measured with 3 concurrent 5GB layer captures)
 resources:
   requests:
