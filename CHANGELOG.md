@@ -8,7 +8,6 @@ The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ 
 
 - **Image-tag pins bumped to v1.9.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI release that adds a standalone MCP server (`reel start mcp`) — used outside the cluster, on developer laptops. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for what's new on the CLI side.
 - **`templates/daemonset.yaml`: agent launch args `["server"]` → `["start", "server"]`.** The CLI renamed the long-running command from `reel server` to `reel start server` (no back-compat shim), so the agent container must invoke the new command or it crashloops on an unknown-command error. Required chart-side change paired with this release.
-- The in-pod MCP listener planned for v1.10.0 will land further chart edits (port exposure, optional disable flag).
 
 ## v1.8.0
 
