@@ -4,6 +4,12 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.9.1
+
+- **Image-tag pins bumped to v1.9.1** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that hardens the agent API (the HTTP API now binds localhost by default) and fixes IPv6 rendering in volatile dumps. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
+- **`templates/clusterrole.yaml`: secrets RBAC narrowed to `get` only.** The agent fetches a user-referenced backup-credentials secret by name (or falls back to IRSA) — it no longer holds `list`/`watch` on secrets, so a compromised agent cannot enumerate cluster secrets. Self-service backup config (any namespace) is unaffected. ConfigMaps keep `get`/`list`/`watch`.
+- **`templates/networkpolicy.yaml`: new opt-in default-deny-ingress NetworkPolicy** (`networkPolicy.enabled`, default `false`). The agent's forensic data path is node-local (`/host/proc`, hostPID, CRI socket), so it never needs inbound pod/cluster connectivity; when enabled, the policy denies all ingress and scopes egress to DNS + HTTPS (Kubernetes API, S3, vex-hub, telemetry), with `networkPolicy.extraEgress` for environment-specific ports. Defense-in-depth on top of the CLI's new localhost bind. A lint-time CI invariant asserts the secrets verb stays `get`-only and the policy denies ingress.
+
 ## v1.9.0
 
 - **Image-tag pins bumped to v1.9.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI release that adds a standalone MCP server (`reel start mcp`) — used outside the cluster, on developer laptops. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md) for what's new on the CLI side.
