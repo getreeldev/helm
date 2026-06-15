@@ -4,6 +4,11 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.10.0
+
+- **Image-tag pins bumped to v1.10.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that repoints telemetry to a live endpoint (PostHog) with a privacy-vetted metering heartbeat, reframes the no-license grace period (3-hour in-memory grace; the real evaluation is a free 30-day issued license), and fixes checkpoint/layer/frame/memory uploads to S3. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
+- No chart template changes.
+
 ## v1.9.1
 
 - **Image-tag pins bumped to v1.9.1** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that hardens the agent API (the HTTP API now binds localhost by default) and fixes IPv6 rendering in volatile dumps. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
