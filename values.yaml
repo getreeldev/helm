@@ -28,7 +28,8 @@ config:
 # -----------------------------------------------------------------------------
 # LICENSE (Required for production)
 # -----------------------------------------------------------------------------
-# Reel includes a 30-minute trial. For production use, obtain a license at
+# Without a license Reel runs only a short 3-hour grace period. For a free
+# 30-day trial license or a production license, get one at
 # https://getreel.dev and configure it below.
 
 license:

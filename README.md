@@ -41,7 +41,7 @@ Reel captures container state before it disappears. When a pod crashes, scales d
 helm install reel oci://docker.io/getreel/helm -n reel --create-namespace
 ```
 
-Includes a **30-minute trial**. For production, [request an extended license](https://getreel.dev).
+Runs a short **3-hour grace period** without a license. [Request a free 30-day trial license](https://getreel.dev) for full evaluation, or a production license.
 
 ---
 
@@ -52,6 +52,8 @@ Includes a **30-minute trial**. For production, [request an extended license](ht
 | Kubernetes | 1.25+ |
 | containerd | 2.0+ |
 | Helm | 3.x |
+
+Node architectures: `linux/amd64` and `linux/arm64` — the agent and init images ship as multi-arch manifests, so Kubernetes pulls the right one per node (including mixed-arch clusters).
 
 See [Requirements](https://getreel.dev/docs/requirements) for cloud provider notes and full details.
 
