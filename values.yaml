@@ -65,12 +65,16 @@ initTrivy:
     pullPolicy: IfNotPresent
 
 # ClamAV malware scanning (runs as sidecar)
-# Signature database loads ~1GB into memory on startup
+# Signature database loads ~1GB into memory on startup.
+# getreel/clamav is our multi-arch (amd64+arm64) Alpine build of ClamAV — the
+# official clamav/clamav image is amd64-only, so it can't run on arm64 nodes.
+# Tag is bumped to the release version by publish-helm (it's a getreel/* image).
 clamav:
   enabled: true
   image:
-    repository: clamav/clamav
-    tag: "1.5"
+    repository: getreel/clamav
+    tag: "v1.9.1"
+    pullPolicy: IfNotPresent
   resources:
     requests:
       cpu: 100m
