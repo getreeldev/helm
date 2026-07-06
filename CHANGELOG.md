@@ -4,6 +4,13 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.11.0
+
+- **Image-tag pins bumped to v1.11.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`, and — new this release — `getreel/clamav`. Picks up the CLI / agent release adding linux/arm64 support end-to-end (multi-arch images, arm64 checkpoint/restore). See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
+- **ClamAV sidecar switches to `getreel/clamav`** (was `clamav/clamav`, which is amd64-only across all tags): our multi-arch Alpine build, so malware scanning runs on arm64 nodes. The clamav tag is now release-pinned and bumped by the publish pipeline like the other `getreel/*` images (previously floated at `1.5`).
+- **Multi-arch node support noted in README and values**: `linux/amd64` and `linux/arm64` nodes, including mixed-architecture clusters — Kubernetes pulls the right image per node from the manifest lists.
+- **License copy refreshed** in README and values comments: 3-hour no-license grace wording (was "30-minute trial") with a pointer to the free 30-day trial license.
+
 ## v1.10.0
 
 - **Image-tag pins bumped to v1.10.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`. Picks up a CLI / agent release that repoints telemetry to a live endpoint (PostHog) with a privacy-vetted metering heartbeat, reframes the no-license grace period (3-hour in-memory grace; the real evaluation is a free 30-day issued license), and fixes checkpoint/layer/frame/memory uploads to S3. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
