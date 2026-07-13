@@ -76,8 +76,14 @@ spec:
       {{- if .Values.clamav.enabled }}
       # Prepare ClamAV database directory with correct permissions
       - name: init-clamav
-        image: busybox:1.36
-        command: ["sh", "-c", "chmod 777 /var/lib/clamav"]
+        # Uses the clamav image (same as the clamd sidecar — no extra pull) so it
+        # can seed the per-node DB hostPath from the image's baked baseline DB on
+        # first boot, when the dir is empty. This guarantees clamd starts with
+        # signatures even if a runtime freshclam is rate-limited by ClamAV's CDN.
+        # An already-populated (freshclam-updated) dir on a returning node is left
+        # intact; freshclam then applies deltas on top.
+        image: "{{ .Values.clamav.image.repository }}:{{ .Values.clamav.image.tag }}"
+        command: ["sh", "-c", "if [ -z \"$(ls -A /var/lib/clamav/*.cvd /var/lib/clamav/*.cld 2>/dev/null)\" ]; then cp -a /opt/clamav-seed/. /var/lib/clamav/; fi; chmod -R 777 /var/lib/clamav"]
         volumeMounts:
         - name: clamav-db
           mountPath: /var/lib/clamav

@@ -7,7 +7,7 @@ The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ 
 ## v1.11.1
 
 - **Image-tag pins bumped to v1.11.1** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`, and `getreel/clamav`. Picks up a CLI / agent release that fixes CBOM crypto-classification bugs (TLS 1.2/1.3, ECDSA, weak RSA, SSH key sizes) and hardens the CBOM scanner. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
-- No chart template changes.
+- **`templates/daemonset.yaml`: `init-clamav` now seeds the ClamAV DB from the sidecar image's baked baseline.** The `init-clamav` container switches from `busybox` to the `getreel/clamav` image (no extra pull — same image as the clamd sidecar) and copies the baked-in signature database into the node's DB dir when it's empty, so clamd always starts with signatures even if a runtime `freshclam` is rate-limited by ClamAV's CDN. Previously a throttled first-boot fetch left clamd signature-less and malware scans silently returned nothing. `getreel/clamav` grows ~230 MB (baked DB); the DB hostPath and clamd sidecar are otherwise unchanged.
 
 ## v1.11.0
 
