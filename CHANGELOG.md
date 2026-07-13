@@ -4,6 +4,11 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.11.1
+
+- **Image-tag pins bumped to v1.11.1** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`, and `getreel/clamav`. Picks up a CLI / agent release that fixes CBOM crypto-classification bugs (TLS 1.2/1.3, ECDSA, weak RSA, SSH key sizes) and hardens the CBOM scanner. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
+- No chart template changes.
+
 ## v1.11.0
 
 - **Image-tag pins bumped to v1.11.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`, and — new this release — `getreel/clamav`. Picks up the CLI / agent release adding linux/arm64 support end-to-end (multi-arch images, arm64 checkpoint/restore). See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
