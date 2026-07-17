@@ -48,9 +48,15 @@ license:
 # -----------------------------------------------------------------------------
 # Enable or disable optional components.
 
-# CRIU checkpoint support (installs CRIU binary to host)
+# CRIU checkpoint/restore support. OPT-IN (disabled by default): init-criu
+# installs a patched CRIU binary onto the host, and Kubernetes' ContainerCheckpoint
+# feature is itself still beta — so it's off unless you ask for it. Enable with
+# `--set initCriu.enabled=true` on nodes with a writable host filesystem. It is
+# unavailable on immutable-OS nodes (Talos, Bottlerocket, Flatcar), which run
+# fine on these stock values — no separate profile needed. Layer capture and
+# live memory dump do not depend on CRIU and remain available regardless.
 initCriu:
-  enabled: true
+  enabled: false
   image:
     repository: getreel/init-criu
     tag: "v1.11.2"
