@@ -4,6 +4,12 @@ All notable changes to the Reel Helm chart are documented here. CLI changes live
 
 The chart version tracks the reel CLI / agent image version (`vX.Y.Z` chart ⇄ `getreel/agent:vX.Y.Z`).
 
+## v1.12.0
+
+- **Image-tag pins bumped to v1.12.0** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`, and `getreel/clamav`. Picks up the CLI / agent release adding node-OS flavor detection with fleet telemetry and official Talos Linux support. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
+- **`values.yaml`: `initCriu.enabled` now defaults to `false` — checkpoint/restore is opt-in.** init-criu installs a patched CRIU binary onto the host and Kubernetes' `ContainerCheckpoint` feature is still beta, so it's off unless you ask for it. **To keep checkpoint, deploy with `--set initCriu.enabled=true`** on nodes with a writable host filesystem. Layer capture and live memory dump don't depend on CRIU and stay on by default.
+- **Immutable-OS nodes (Talos, Bottlerocket, Flatcar) now run on stock values** — with checkpoint opt-in, no init-criu-on-a-read-only-host to work around, so no separate profile is needed. `reel status` reports checkpoint unavailable-with-reason on those nodes.
+
 ## v1.11.2
 
 - **Image-tag pins bumped to v1.11.2** for `getreel/agent`, `getreel/init-criu`, `getreel/init-trivy`, and `getreel/clamav`. Picks up a CLI / agent release that fixes CBOM crypto-classification bugs (TLS 1.2/1.3, ECDSA, weak RSA, SSH key sizes) and hardens the CBOM scanner. See the [CLI changelog](https://github.com/getreeldev/reel-cli/blob/main/CHANGELOG.md).
