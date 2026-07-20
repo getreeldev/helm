@@ -59,7 +59,7 @@ initCriu:
   enabled: false
   image:
     repository: getreel/init-criu
-    tag: "v1.11.2"
+    tag: "v1.12.0"
     pullPolicy: IfNotPresent
 
 # Trivy vulnerability scanning
@@ -67,7 +67,7 @@ initTrivy:
   enabled: true
   image:
     repository: getreel/init-trivy
-    tag: "v1.11.2"
+    tag: "v1.12.0"
     pullPolicy: IfNotPresent
 
 # ClamAV malware scanning (runs as sidecar)
@@ -79,7 +79,7 @@ clamav:
   enabled: true
   image:
     repository: getreel/clamav
-    tag: "v1.11.2"
+    tag: "v1.12.0"
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -103,7 +103,7 @@ scheduler:
 
 image:
   repository: getreel/agent
-  tag: "v1.11.2"
+  tag: "v1.12.0"
   pullPolicy: IfNotPresent
 
 # -----------------------------------------------------------------------------
