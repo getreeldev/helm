@@ -55,4 +55,19 @@ jobs:
       - name: Package and push
         run: |
           helm package .
+
+          # Gate: never publish a chart carrying repository metadata or a
+          # credential. Chart 1.5.3 shipped .git/config with a release token in
+          # it. .helmignore is what prevents it; this is what proves it, on both
+          # publishers (this job and reel's publish-helm push the same tag).
+          if tar -tzf helm-*.tgz | grep -qE '(^|/)\.git/'; then
+            echo "::error::chart contains .git/ — refusing to publish"
+            tar -tzf helm-*.tgz | grep -E '(^|/)\.git/' | head
+            exit 1
+          fi
+          if tar -xzOf helm-*.tgz | grep -qaE 'gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AUTHORIZATION: basic'; then
+            echo "::error::chart contains something credential-shaped — refusing to publish"
+            exit 1
+          fi
+
           helm push helm-*.tgz oci://docker.io/getreel

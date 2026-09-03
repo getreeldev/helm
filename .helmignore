@@ -1,0 +1,11 @@
+# Never package repository or CI metadata. `helm package` sweeps the whole
+# working directory, so a checkout that persists its credentials would ship
+# them inside the chart — which is how a release token reached chart 1.5.3.
+.git/
+.gitignore
+.github/
+
+# Local scratch
+*.tgz
+.DS_Store
+*.bak
